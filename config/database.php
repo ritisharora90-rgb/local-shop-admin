@@ -63,14 +63,10 @@ return [
             ]) : [],
         ],
        
-  'mongodb' => [
-
-'driver' => 'mongodb',
-
-'dsn' => env('DB_URI'),
-
-'database' => env('DB_DATABASE'),
-
+ 'mongodb' => [
+    'driver' => 'mongodb',
+    'dsn' => env('MONGODB_URI'),
+    'database' => env('DB_DATABASE', 'localshop'),
 ],
 
         'mariadb' => [
