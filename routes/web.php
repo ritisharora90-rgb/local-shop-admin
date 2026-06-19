@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\OrderController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/admin');
 });
 
 Route::delete(
