@@ -213,7 +213,7 @@ Login
 <div class='register'>
  <p className="text-center mb-0 mt-2" >
           Do not have an account?
-          <a href="http://127.0.0.1:8000/admin/register" className="text-primary">Register here</a>
+          <a href="https://local-shop-admin.onrender.com/admin/register" className="text-primary">Register here</a>
         </p>
 </div>
 
