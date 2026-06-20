@@ -6,12 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\Admin\OrderController;
 
-
-
-
-Route::get('/', function () {
-    return redirect('/admin');
-});
+Route::redirect('/','/admin');
 
 Route::delete(
 '/admin/products/{id}',
