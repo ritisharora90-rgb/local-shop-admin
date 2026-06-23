@@ -46,12 +46,15 @@ function(Request $request){
 $cart =
 Cart::firstOrCreate(
 [
-'user_id'=>'guest'
+'user_id'=>$request->user_id
 ]
 );
 
 $cart->items =
-$request->items;
+$request->input(
+'items',
+[]
+);
 
 $cart->save();
 
