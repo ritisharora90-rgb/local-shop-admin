@@ -39,28 +39,28 @@ $user
 
 
 // Save Cart
-Route::post(
-'/cart',
-function(Request $request){
+// Save Cart
+Route::post('/cart', function (Illuminate\Http\Request $request) {
 
-$cart =
-Cart::firstOrCreate(
-[
-'user_id'=>$request->user_id
-]
-);
+    // 1. Find or create the user's cart record
+    $cart = App\Models\Cart::firstOrCreate([
+        'user_id' => $request->user_id
+    ]);
 
-$cart->items =
-$request->input(
-'items',
-[]
-);
+    // 2. Grab the raw items payload sent from Next.js
+    $rawItems = $request->input('items', []);
 
-$cart->save();
+    // 3. FORCE DECODE BREAK: If Next.js or Laravel treated it as a string,
+    // we force it back into a pure, clean PHP array structure here.
+    if (is_string($rawItems)) {
+        $rawItems = json_decode($rawItems, true);
+    }
 
-return response()->json(
-$cart
-);
+    // 4. Assign the pure data array straight to the record field
+    $cart->items = $rawItems;
 
-}
-);
+    // 5. Save it to Atlas
+    $cart->save();
+
+    return response()->json($cart);
+});
