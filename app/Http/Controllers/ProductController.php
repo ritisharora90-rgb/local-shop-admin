@@ -60,11 +60,15 @@ class ProductController extends Controller
     }
 
     // API → ALL PRODUCTS
-    public function apiIndex()
-    {
+    public function apiIndex(Request $request)
+{
+    if ($request->has('shop_id')) {
+        $products = Product::where('shop_id', $request->shop_id)->get();
+    } else {
         $products = Product::all();
-        return response()->json($products);
     }
+    return response()->json($products);
+}
 
     // API → SINGLE PRODUCT
     public function show($id)
