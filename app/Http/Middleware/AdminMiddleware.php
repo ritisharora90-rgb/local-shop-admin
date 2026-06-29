@@ -7,10 +7,18 @@ use Illuminate\Http\Request;
 
 class AdminMiddleware
 {
-    public function handle(Request $request, Closure $next)
-    {
+    public function handle(
+        Request $request,
+        Closure $next
+    ) {
+
+        if (!session()->has('admin')) {
+
+            return redirect(
+                '/admin/login'
+            );
+        }
 
         return $next($request);
-
     }
 }

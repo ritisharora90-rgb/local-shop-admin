@@ -55,10 +55,12 @@ public function register(Request $request)
         )
     ) {
 
-        session([
-            'admin' => true,
-            'admin_name' => $admin->name
-        ]);
+       $request->session()->regenerate();
+
+session([
+    'admin' => true,
+    'admin_name' => $admin->name
+]);
 
         return redirect('/admin');
     }

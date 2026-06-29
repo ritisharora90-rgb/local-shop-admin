@@ -46,16 +46,12 @@ placeholder="Description">
 </textarea>
 
 
-<input 
-class="form-control mb-2"
-name="image"
-placeholder="Image URL">
 
 
 <button class="btn btn-success">
 
 Add Product
-
+  
 </button>
 
 

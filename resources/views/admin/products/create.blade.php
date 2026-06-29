@@ -5,31 +5,25 @@
 
 <title>Add Product</title>
 
-<link 
+<link
 href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
 rel="stylesheet">
 
-<link 
+<link
 href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
 rel="stylesheet">
 
 </head>
 
-
 <body class="bg-light">
-
 
 <div class="container mt-5">
 
-
 <div class="row justify-content-center">
-
 
 <div class="col-md-7">
 
-
 <div class="card shadow-lg border-0 rounded-4">
-
 
 <div class="card-header bg-primary text-white text-center rounded-top-4">
 
@@ -40,16 +34,15 @@ Add New Product
 
 </div>
 
-
-
 <div class="card-body p-5">
 
 
-<form method="POST"
-action="/admin/products">
+<form
+method="POST"
+action="/admin/products"
+enctype="multipart/form-data">
 
 @csrf
-
 
 
 <label class="form-label">
@@ -62,13 +55,14 @@ Product Name
 <i class="bi bi-box"></i>
 </span>
 
-<input 
+<input
+type="text"
 class="form-control"
 name="name"
-placeholder="Enter product name">
+placeholder="Enter product name"
+required>
 
 </div>
-
 
 
 
@@ -82,13 +76,14 @@ Price
 ₹
 </span>
 
-<input 
+<input
+type="number"
 class="form-control"
 name="price"
-placeholder="Enter price">
+placeholder="Enter price"
+required>
 
 </div>
-
 
 
 
@@ -102,7 +97,8 @@ Category
 <i class="bi bi-tags"></i>
 </span>
 
-<input 
+<input
+type="text"
 class="form-control"
 name="category"
 placeholder="Enter category">
@@ -111,9 +107,8 @@ placeholder="Enter category">
 
 
 
-
 <label class="form-label">
-Image URL
+Upload Image
 </label>
 
 <div class="input-group mb-3">
@@ -122,20 +117,19 @@ Image URL
 <i class="bi bi-image"></i>
 </span>
 
-<input 
+<input
+type="file"
 class="form-control"
 name="image"
-placeholder="Paste image URL">
+accept="image/*">
 
 </div>
-
 
 
 
 <label class="form-label">
 Description
 </label>
-
 
 <textarea
 class="form-control mb-4"
@@ -146,7 +140,8 @@ placeholder="Write product description">
 
 
 
-<button 
+<button
+type="submit"
 class="btn btn-success w-100 btn-lg">
 
 <i class="bi bi-plus-circle"></i>
@@ -155,25 +150,17 @@ Add Product
 
 </button>
 
-
-
 </form>
 
+</div>
 
 </div>
 
+</div>
 
 </div>
 
-
 </div>
-
-
-</div>
-
-
-</div>
-
 
 </body>
 
