@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Models\Product;
 use App\Models\Admin;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -23,18 +23,15 @@ class ProductController extends Controller
         $admin = $this->getAdmin();
 
         if (!$admin) {
-            return redirect(
-                '/admin/login'
-            );
+            return redirect('/admin/login');
         }
 
-        $products =
-            Product::where(
-                'shop_id',
-                $admin->shop_id
-            )
-            ->latest()
-            ->paginate(10);
+        $products = Product::where(
+            'shop_id',
+            $admin->shop_id
+        )
+        ->latest()
+        ->paginate(10);
 
         return view(
             'admin.products.index',
@@ -42,156 +39,70 @@ class ProductController extends Controller
         );
     }
 
-
     // API → ALL PRODUCTS
     public function apiIndex()
     {
-        $products =
-            Product::all()->map(
-                function ($product) {
-
-                    if (
-                        $product->image &&
-                        !str_starts_with(
-                            $product->image,
-                            'http'
-                        )
-                    ) {
-                        $product->image =
-                            asset(
-                                'storage/' .
-                                $product->image
-                            );
-                    }
-
-                    return $product;
-                }
-            );
-
-        return response()->json(
-            $products
-        );
+        $products = Product::all();
+        return response()->json($products);
     }
-
 
     // API → SINGLE PRODUCT
     public function show($id)
     {
-        $product =
-            Product::find($id);
+        $product = Product::find($id);
 
         if (!$product) {
-
             return response()->json([
-                'message' =>
-                'Product not found'
+                'message' => 'Product not found'
             ], 404);
         }
 
-        if (
-            $product->image &&
-            !str_starts_with(
-                $product->image,
-                'http'
-            )
-        ) {
-
-            $product->image =
-                asset(
-                    'storage/' .
-                    $product->image
-                );
-        }
-
-        return response()->json(
-            $product
-        );
+        return response()->json($product);
     }
-
 
     // CREATE
     public function create()
     {
-        return view(
-            'admin.products.create'
-        );
+        return view('admin.products.create');
     }
-
 
     // STORE
-    public function store(
-        Request $request
-    )
+    public function store(Request $request)
     {
+        $validated = $request->validate([
+            'name'        => 'required',
+            'price'       => 'required|numeric',
+            'category'    => 'nullable',
+            'description' => 'nullable',
+            'image'       => 'nullable|image'
+        ]);
 
-        $validated =
-            $request->validate([
-
-                'name' =>
-                'required',
-
-                'price' =>
-                'required|numeric',
-
-                'category' =>
-                'nullable',
-
-                'description' =>
-                'nullable',
-
-                'image' =>
-                'nullable|image'
-
-            ]);
-
-        if (
-            $request->hasFile(
-                'image'
-            )
-        ) {
-
-            $validated['image'] =
-                $request
-                ->file('image')
-                ->store(
-                    'products',
-                    'public'
-                );
+        // Upload to Cloudinary
+        if ($request->hasFile('image')) {
+            $uploaded = Cloudinary::upload(
+                $request->file('image')->getRealPath()
+            );
+            $validated['image'] = $uploaded->getSecurePath();
         }
 
-        $admin =
-            $this->getAdmin();
+        $admin = $this->getAdmin();
 
         if (!$admin) {
-
-            return redirect(
-                '/admin/login'
-            );
+            return redirect('/admin/login');
         }
 
-        $validated['shop_id'] =
-            $admin->shop_id;
+        $validated['shop_id'] = $admin->shop_id;
 
-        Product::create(
-            $validated
-        );
+        Product::create($validated);
 
-        return redirect(
-            '/admin/products'
-        )->with(
-            'success',
-            'Product Added'
-        );
+        return redirect('/admin/products')
+            ->with('success', 'Product Added');
     }
-
 
     // EDIT
     public function edit($id)
     {
-        $product =
-            Product::findOrFail(
-                $id
-            );
+        $product = Product::findOrFail($id);
 
         return view(
             'admin.products.edit',
@@ -199,97 +110,39 @@ class ProductController extends Controller
         );
     }
 
-
     // UPDATE
-    public function update(
-        Request $request,
-        $id
-    )
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
 
-        $product =
-            Product::findOrFail(
-                $id
+        $validated = $request->validate([
+            'name'        => 'required',
+            'price'       => 'required|numeric',
+            'category'    => 'nullable',
+            'description' => 'nullable',
+            'image'       => 'nullable|image'
+        ]);
+
+        // Upload new image to Cloudinary
+        if ($request->hasFile('image')) {
+            $uploaded = Cloudinary::upload(
+                $request->file('image')->getRealPath()
             );
-
-        $validated =
-            $request->validate([
-
-                'name' =>
-                'required',
-
-                'price' =>
-                'required|numeric',
-
-                'category' =>
-                'nullable',
-
-                'description' =>
-                'nullable',
-
-                'image' =>
-                'nullable|image'
-
-            ]);
-
-        if (
-            $request->hasFile(
-                'image'
-            )
-        ) {
-
-            if (
-                $product->image
-            ) {
-
-                Storage::disk(
-                    'public'
-                )->delete(
-                    $product->image
-                );
-            }
-
-            $validated['image'] =
-                $request
-                ->file('image')
-                ->store(
-                    'products',
-                    'public'
-                );
+            $validated['image'] = $uploaded->getSecurePath();
         }
 
-        $product->update(
-            $validated
-        );
+        $product->update($validated);
 
-        return redirect(
-            '/admin/products'
-        );
+        return redirect('/admin/products');
     }
-
 
     // DELETE
     public function destroy($id)
     {
-        $product =
-            Product::find(
-                $id
-            );
+        $product = Product::find($id);
 
         if (!$product) {
-
             return back();
-        }
-
-        if (
-            $product->image
-        ) {
-
-            Storage::disk(
-                'public'
-            )->delete(
-                $product->image
-            );
         }
 
         $product->delete();
@@ -297,4 +150,3 @@ class ProductController extends Controller
         return back();
     }
 }
-
