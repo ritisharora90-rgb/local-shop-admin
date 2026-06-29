@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+
+    // Get Logged Admin
     private function getAdmin()
     {
         return Admin::where(
@@ -16,142 +18,416 @@ class ProductController extends Controller
         )->first();
     }
 
-    // Upload image to Cloudinary via REST API
+
+
+    // Upload Image → Cloudinary
     private function uploadToCloudinary($file)
     {
-        $cloudName  = env('CLOUDINARY_CLOUD_NAME');
-        $apiKey     = env('CLOUDINARY_API_KEY');
-        $apiSecret  = env('CLOUDINARY_API_SECRET');
-        $timestamp  = time();
-        $signature  = sha1("timestamp={$timestamp}{$apiSecret}");
+        $cloudName =
+            env('CLOUDINARY_CLOUD_NAME');
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 
+        $apiKey =
+            env('CLOUDINARY_API_KEY');
+
+        $apiSecret =
+            env('CLOUDINARY_API_SECRET');
+
+        $timestamp =
+            time();
+
+        $signature =
+            sha1(
+                "timestamp={$timestamp}{$apiSecret}"
+            );
+
+        $ch =
+            curl_init();
+
+        curl_setopt(
+            $ch,
+            CURLOPT_URL,
             "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload"
         );
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, [
-            'file'      => new \CURLFile($file->getRealPath(), 
-                              $file->getMimeType(), 
-                              $file->getClientOriginalName()),
-            'api_key'   => $apiKey,
-            'timestamp' => $timestamp,
-            'signature' => $signature,
-        ]);
 
-        $response = curl_exec($ch);
+        curl_setopt(
+            $ch,
+            CURLOPT_POST,
+            true
+        );
+
+        curl_setopt(
+            $ch,
+            CURLOPT_RETURNTRANSFER,
+            true
+        );
+
+        curl_setopt(
+            $ch,
+            CURLOPT_POSTFIELDS,
+            [
+
+                'file'=>
+                new \CURLFile(
+                    $file->getRealPath(),
+                    $file->getMimeType(),
+                    $file->getClientOriginalName()
+                ),
+
+                'api_key'=>
+                $apiKey,
+
+                'timestamp'=>
+                $timestamp,
+
+                'signature'=>
+                $signature
+
+            ]
+        );
+
+        $response =
+            curl_exec($ch);
+
         curl_close($ch);
 
-        $result = json_decode($response, true);
-        return $result['secure_url'] ?? null;
+        $result =
+            json_decode(
+                $response,
+                true
+            );
+
+        return
+            $result['secure_url']
+            ?? null;
     }
 
-    // ADMIN PRODUCT LIST
+
+
+    // ADMIN PRODUCTS
     public function index()
     {
-        $admin = $this->getAdmin();
+        $admin =
+            $this->getAdmin();
+
         if (!$admin) {
-            return redirect('/admin/login');
+            return redirect(
+                '/admin/login'
+            );
         }
-        $products = Product::where('shop_id', $admin->shop_id)
-            ->latest()->paginate(10);
-        return view('admin.products.index', compact('products'));
+
+        $products =
+            Product::where(
+                'shop_id',
+                $admin->shop_id
+            )
+            ->latest()
+            ->paginate(10);
+
+        return view(
+            'admin.products.index',
+            compact(
+                'products'
+            )
+        );
     }
 
-    // API → ALL PRODUCTS
+
+
+    // API PRODUCTS
     public function apiIndex(Request $request)
-{
-    if ($request->has('shop_id')) {
-        $products = Product::where('shop_id', $request->shop_id)->get();
-    } else {
-        $products = Product::all();
-    }
-    return response()->json($products);
-}
+    {
 
-    // API → SINGLE PRODUCT
+        $query =
+            Product::query();
+
+        if (
+            $request->filled(
+                'shop_id'
+            )
+        ) {
+
+            $query->where(
+                'shop_id',
+                $request->shop_id
+            );
+
+        }
+
+        $products =
+            $query
+            ->latest()
+            ->get();
+
+        return response()
+            ->json(
+                $products
+            );
+    }
+
+
+
+    // SINGLE PRODUCT
     public function show($id)
     {
-        $product = Product::find($id);
+
+        $product =
+            Product::find($id);
+
         if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+
+            return response()
+                ->json(
+                    [
+                        'message'=>
+                        'Product not found'
+                    ],
+                    404
+                );
+
         }
-        return response()->json($product);
+
+        return response()
+            ->json(
+                $product
+            );
     }
 
-    // CREATE
+
+
+    // CREATE PAGE
     public function create()
     {
-        return view('admin.products.create');
+        return view(
+            'admin.products.create'
+        );
     }
+
+
 
     // STORE
-    public function store(Request $request)
+    public function store(
+        Request $request
+    )
     {
-        $validated = $request->validate([
-            'name'        => 'required',
-            'price'       => 'required|numeric',
-            'category'    => 'nullable',
-            'description' => 'nullable',
-            'image'       => 'nullable|image'
-        ]);
 
-        if ($request->hasFile('image')) {
-            $url = $this->uploadToCloudinary($request->file('image'));
-            if ($url) {
-                $validated['image'] = $url;
-            }
-        }
+        $admin =
+            $this->getAdmin();
 
-        $admin = $this->getAdmin();
         if (!$admin) {
-            return redirect('/admin/login');
+
+            return redirect(
+                '/admin/login'
+            );
+
         }
 
-        $validated['shop_id'] = $admin->shop_id;
-        Product::create($validated);
+        $validated =
+            $request->validate([
 
-        return redirect('/admin/products')->with('success', 'Product Added');
+                'name'=>
+                'required',
+
+                'price'=>
+                'required|numeric',
+
+                'category'=>
+                'nullable',
+
+                'description'=>
+                'nullable',
+
+                'image'=>
+                'nullable|image'
+
+            ]);
+
+
+        if (
+            $request
+            ->hasFile(
+                'image'
+            )
+        ) {
+
+            $url =
+                $this
+                ->uploadToCloudinary(
+                    $request
+                    ->file(
+                        'image'
+                    )
+                );
+
+            if ($url) {
+
+                $validated['image']
+                    =
+                    $url;
+
+            }
+
+        }
+
+
+        $validated['shop_id']
+            =
+            $admin->shop_id;
+
+
+        Product::create(
+            $validated
+        );
+
+        return redirect(
+            '/admin/products'
+        )->with(
+            'success',
+            'Product Added'
+        );
     }
+
+
+
 
     // EDIT
     public function edit($id)
     {
-        $product = Product::findOrFail($id);
-        return view('admin.products.edit', compact('product'));
+
+        $admin =
+            $this->getAdmin();
+
+        $product =
+            Product::where(
+                'shop_id',
+                $admin->shop_id
+            )
+            ->findOrFail(
+                $id
+            );
+
+        return view(
+            'admin.products.edit',
+            compact(
+                'product'
+            )
+        );
     }
+
+
+
 
     // UPDATE
-    public function update(Request $request, $id)
+    public function update(
+        Request $request,
+        $id
+    )
     {
-        $product = Product::findOrFail($id);
 
-        $validated = $request->validate([
-            'name'        => 'required',
-            'price'       => 'required|numeric',
-            'category'    => 'nullable',
-            'description' => 'nullable',
-            'image'       => 'nullable|image'
-        ]);
+        $admin =
+            $this->getAdmin();
 
-        if ($request->hasFile('image')) {
-            $url = $this->uploadToCloudinary($request->file('image'));
+        $product =
+            Product::where(
+                'shop_id',
+                $admin->shop_id
+            )
+            ->findOrFail(
+                $id
+            );
+
+        $validated =
+            $request->validate([
+
+                'name'=>
+                'required',
+
+                'price'=>
+                'required|numeric',
+
+                'category'=>
+                'nullable',
+
+                'description'=>
+                'nullable',
+
+                'image'=>
+                'nullable|image'
+
+            ]);
+
+
+        if (
+            $request
+            ->hasFile(
+                'image'
+            )
+        ) {
+
+            $url =
+                $this
+                ->uploadToCloudinary(
+                    $request
+                    ->file(
+                        'image'
+                    )
+                );
+
             if ($url) {
-                $validated['image'] = $url;
+
+                $validated['image']
+                    =
+                    $url;
+
             }
+
         }
 
-        $product->update($validated);
-        return redirect('/admin/products');
+
+        $product
+            ->update(
+                $validated
+            );
+
+        return redirect(
+            '/admin/products'
+        )
+        ->with(
+            'success',
+            'Product Updated'
+        );
+
     }
+
+
+
 
     // DELETE
     public function destroy($id)
     {
-        $product = Product::find($id);
-        if (!$product) return back();
+
+        $admin =
+            $this->getAdmin();
+
+        $product =
+            Product::where(
+                'shop_id',
+                $admin->shop_id
+            )
+            ->find(
+                $id
+            );
+
+        if (!$product) {
+            return back();
+        }
+
         $product->delete();
-        return back();
+
+        return back()
+            ->with(
+                'success',
+                'Product Deleted'
+            );
     }
+
 }
