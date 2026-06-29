@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Models\Product;
 use App\Models\Admin;
 use Illuminate\Http\Request;
@@ -17,26 +16,47 @@ class ProductController extends Controller
         )->first();
     }
 
+    // Upload image to Cloudinary via REST API
+    private function uploadToCloudinary($file)
+    {
+        $cloudName  = env('CLOUDINARY_CLOUD_NAME');
+        $apiKey     = env('CLOUDINARY_API_KEY');
+        $apiSecret  = env('CLOUDINARY_API_SECRET');
+        $timestamp  = time();
+        $signature  = sha1("timestamp={$timestamp}{$apiSecret}");
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 
+            "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload"
+        );
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, [
+            'file'      => new \CURLFile($file->getRealPath(), 
+                              $file->getMimeType(), 
+                              $file->getClientOriginalName()),
+            'api_key'   => $apiKey,
+            'timestamp' => $timestamp,
+            'signature' => $signature,
+        ]);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $result = json_decode($response, true);
+        return $result['secure_url'] ?? null;
+    }
+
     // ADMIN PRODUCT LIST
     public function index()
     {
         $admin = $this->getAdmin();
-
         if (!$admin) {
             return redirect('/admin/login');
         }
-
-        $products = Product::where(
-            'shop_id',
-            $admin->shop_id
-        )
-        ->latest()
-        ->paginate(10);
-
-        return view(
-            'admin.products.index',
-            compact('products')
-        );
+        $products = Product::where('shop_id', $admin->shop_id)
+            ->latest()->paginate(10);
+        return view('admin.products.index', compact('products'));
     }
 
     // API → ALL PRODUCTS
@@ -50,13 +70,9 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::find($id);
-
         if (!$product) {
-            return response()->json([
-                'message' => 'Product not found'
-            ], 404);
+            return response()->json(['message' => 'Product not found'], 404);
         }
-
         return response()->json($product);
     }
 
@@ -77,37 +93,29 @@ class ProductController extends Controller
             'image'       => 'nullable|image'
         ]);
 
-        // Upload to Cloudinary
         if ($request->hasFile('image')) {
-            $uploaded = Cloudinary::upload(
-                $request->file('image')->getRealPath()
-            );
-            $validated['image'] = $uploaded->getSecurePath();
+            $url = $this->uploadToCloudinary($request->file('image'));
+            if ($url) {
+                $validated['image'] = $url;
+            }
         }
 
         $admin = $this->getAdmin();
-
         if (!$admin) {
             return redirect('/admin/login');
         }
 
         $validated['shop_id'] = $admin->shop_id;
-
         Product::create($validated);
 
-        return redirect('/admin/products')
-            ->with('success', 'Product Added');
+        return redirect('/admin/products')->with('success', 'Product Added');
     }
 
     // EDIT
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-
-        return view(
-            'admin.products.edit',
-            compact('product')
-        );
+        return view('admin.products.edit', compact('product'));
     }
 
     // UPDATE
@@ -123,16 +131,14 @@ class ProductController extends Controller
             'image'       => 'nullable|image'
         ]);
 
-        // Upload new image to Cloudinary
         if ($request->hasFile('image')) {
-            $uploaded = Cloudinary::upload(
-                $request->file('image')->getRealPath()
-            );
-            $validated['image'] = $uploaded->getSecurePath();
+            $url = $this->uploadToCloudinary($request->file('image'));
+            if ($url) {
+                $validated['image'] = $url;
+            }
         }
 
         $product->update($validated);
-
         return redirect('/admin/products');
     }
 
@@ -140,13 +146,8 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $product = Product::find($id);
-
-        if (!$product) {
-            return back();
-        }
-
+        if (!$product) return back();
         $product->delete();
-
         return back();
     }
 }
