@@ -11,6 +11,7 @@ class Admin extends Model
     protected $fillable = [
         'name',
         'email',
-        'password'
+        'password',
+        'shop_id'    // ← add this
     ];
 }
