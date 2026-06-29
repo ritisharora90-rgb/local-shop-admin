@@ -4,50 +4,107 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Admin;
 
 class AdminController extends Controller
 {
+
+    private function getAdmin()
+    {
+        return Admin::where(
+            'name',
+            session(
+                'admin_name'
+            )
+        )->first();
+    }
+
+
+
     public function dashboard()
     {
-        try {
-            $productsCount = Product::count();
-        } catch (\Exception $e) {
-            $productsCount = 0;
+
+        $admin =
+            $this->getAdmin();
+
+        if (!$admin) {
+
+            return redirect(
+                '/admin/login'
+            );
+
         }
 
+
+
         try {
 
-            $usersCount = User::count();
+            $productsCount =
+                Product::where(
+                    'shop_id',
+                    $admin->shop_id
+                )
+                ->count();
 
-            $users = User::latest()
+        } catch (\Exception $e) {
+
+            $productsCount =
+                0;
+
+        }
+
+
+
+        try {
+
+            $usersCount =
+                User::count();
+
+            $users =
+                User::latest()
                 ->take(8)
                 ->get();
 
         } catch (\Exception $e) {
 
-            $usersCount = 0;
+            $usersCount =
+                0;
 
-            $users = collect([]);
+            $users =
+                collect([]);
+
         }
+
+
 
         return view(
             'admin.dashboard',
             compact(
                 'productsCount',
                 'usersCount',
-                'users'
+                'users',
+                'admin'
             )
         );
+
     }
+
+
 
 
     public function users()
     {
-        $users = User::all();
+
+        $users =
+            User::all();
 
         return view(
             'admin.users',
-            compact('users')
+            compact(
+                'users'
+            )
         );
+
     }
+
 }
